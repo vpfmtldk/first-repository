@@ -21,9 +21,12 @@
 | 저가형 하드웨어 기준 연구 사례 | 확인되지 않음 (차별점) |
 | 단안 카메라(깊이 센서 無) 그립 예측 | 최근 연구 흐름과 일치 (RGB-only grasp affordance 예측) |
 | LeKiwi + 핸드 결합 연구 | 확인되지 않음 (차별점) |
+| 저가형 조합의 실패 유형 분류·복구 연구 | 확인되지 않음 — "성공/실패" 이분법을 넘어선 실패 데이터 개념 자체가 부족 |
 
 즉 이 연구는 "단안 카메라 기반 그립 예측"이라는 성숙해가는 방법론을,
 "저가형 멀티핑거 핸드 + 모바일 베이스(LeKiwi)"라는 아직 검증되지 않은 조합에 적용하는 것이 핵심 기여다.
+여기에 더해, 반복 실행 중 발생하는 실패를 유형별로 분류하고 단순 복구 전략의 효과를 정량화하는 것까지 포함해
+"한 번 성공하는 파이프라인"이 아니라 "실패를 설명하고 대응하는 파이프라인"을 지향한다.
 
 ---
 
@@ -119,6 +122,44 @@ flowchart TB
   - 물체 형상 복잡도에 따른 두 방식의 편차 상관관계 (단순 형상일수록 기하 모델과 일치할 것이라는 가설 검증)
 - **의의**: 학습 모델이 실제로 "형상 기반의 합리적인 grasp"를 학습했는지 해석 가능성(interpretability) 관점에서 검증
 
+### Phase 6 — 실패 유형 분류 및 복구 분석
+Phase 5의 성공/실패 이분법을 넘어, 반복 실행 중 발생하는 실패를 파이프라인 모듈 단위로 분류하고
+단순 복구 전략의 효과를 정량화한다. Phase 5와 같은 trial에서 데이터를 함께 수집하되, 분석 목적이 다르므로
+단계는 분리한다.
+
+**분류 체계 (파이프라인 모듈 단위로 정의 → 관찰자가 달라도 같은 분류가 나오도록 판정 기준을 명문화)**
+
+| 실패 유형 | 대응 모듈 | 판정 기준 |
+|---|---|---|
+| 인식 실패 | Module 01 (grasp model) | 예측 `(u,v,θ)`가 물체 영역 밖이거나, 성공 파지에 필요한 각도와 임계값 이상 벗어남 |
+| 계획 실패 | Module 04 (MoveIt) | IK 해 없음 / 충돌로 플래닝 자체가 실패 |
+| 궤적 오버슈트 | Module 04 (컨트롤러) | 목표 pose 도달 시 위치·자세 오차가 허용범위 초과 |
+| 파지 실패 | Module 02·03 (adapter·핸드) | 접근·플래닝은 성공했으나 물체를 놓치거나 힘 조절 실패 |
+| 배치 실패 | 실행 단계 | 파지엔 성공했으나 내려놓는 과정에서 낙하/위치 이탈 |
+
+**시뮬레이션 vs 실물 관찰 가능성**
+- 인식 실패·계획 실패 — MuJoCo 시뮬레이션에서도 대부분 재현 가능 → 대량 trial은 시뮬레이션에서 확보
+- 궤적 오버슈트·파지 실패 — MuJoCo 접촉 물리로 일부 재현되지만, 저가형 하드웨어의 백래시·마찰은 시뮬레이션이 못 잡음 → 실물 비중 필요
+- 배치 실패 — 거의 실물 전용 (무게중심·실제 마찰 계수 의존)
+
+**복구 전략 (1회 재시도, 단순하게 유지 — 정교한 다단계 복구는 범위를 키우므로 지양)**
+
+| 실패 유형 | 복구 전략 |
+|---|---|
+| 인식 실패 | 카메라 재촬영 → 재추론 |
+| 계획 실패 | 모델의 2순위 grasp candidate로 재시도 |
+| 궤적 오버슈트 | 접근 속도·게인 낮춰 재시도 |
+| 파지 실패 | 접근각 ±10° 조정 후 재시도, 또는 프리셋 변경 |
+| 배치 실패 | 배치 속도 낮춰 재시도 |
+
+**비교 지표**
+- 조건별(예: 실물 데이터 비중) 실패 유형 분포 변화 — 예: "실물 데이터 비중이 높아지면 인식 실패는 줄지만 파지 실패는 여전하다"
+- 복구 전/후 성공률 차이 (유형별 + 전체)
+
+**의의**: 사전에 예측한 실패 원인(calibration 오차 누적, 저가형 하드웨어 반복 정밀도 한계 등)을 실측으로 검증하고,
+가장 저비용인 복구 전략만으로 성공률을 얼마나 끌어올릴 수 있는지 정량화한다.
+"예측 → 실측 → 대응 → 검증"으로 이어지는 완결된 사이클을 만드는 단계다.
+
 ---
 
 ## 4. ROS2 파이프라인 설계 (통합 시점)
@@ -133,13 +174,18 @@ flowchart LR
     TF["hand_eye TF\n(camera → base_link)"] --> ADAPT
     ADAPT -->|"geometry_msgs/PoseStamped\n+ HandPreset"| MOVEIT["MoveIt2\nmove_group"]
     MOVEIT --> EXEC["amazinghand_controller\n(FollowJointTrajectory)"]
+    EXEC -.실패 감지.-> SUP["retry_supervisor_node\n(실패유형 판정 + 1회 복구)"]
+    SUP -.재추론 재시도.-> INFER
+    SUP -.재플래닝 재시도.-> MOVEIT
     INFER -.로깅.-> LOG["평가/비교 실험 로거\n(rosbag2)"]
+    SUP -->|"FailureEvent.msg\n(failure_type, recovered)"| LOG
     GEOM["explicit_geometry_node\n(기하 모델, 비교용)"] -.동일 입력.-> LOG
 ```
 
 - **커스텀 메시지 제안**: `GraspPose2D.msg` (`float32 u, float32 v, float32 theta, string preset_id, float32 confidence`)
 - **grasp_adapter_node**: 이미지 좌표 → 카메라 좌표(핀홀 모델 역투영, 필요시 깊이 추정) → TF로 base_link 변환 → MoveIt 목표 pose 생성
-- **rosbag2 로깅**: Phase 5 비교 실험을 위해 추론 결과/기하 모델 결과/실제 실행 결과를 항상 기록해두는 것을 권장
+- **retry_supervisor_node** (Phase 6): 실행 실패를 감지해 인식/계획/궤적 오버슈트/파지/배치 5가지 유형으로 분류하고, 유형별 1회 복구 전략을 실행. `FailureEvent.msg` (`string failure_type, string phase, int32 retry_count, bool recovered`)로 로깅
+- **rosbag2 로깅**: Phase 5 비교 실험과 Phase 6 실패 분석을 위해 추론 결과/기하 모델 결과/실제 실행 결과/`failure_type`을 항상 함께 기록
 
 ---
 
@@ -158,13 +204,15 @@ first-repository/
 ├── geometry_baseline/                    # Phase 4: 명시적 기하 모델 (ROS 비의존)
 │   └── explicit_grasp_geometry.py
 ├── ros2_ws/src/
-│   ├── grasp_msgs/                       # GraspPose2D.msg 등 커스텀 메시지
+│   ├── grasp_msgs/                       # GraspPose2D.msg, FailureEvent.msg 등 커스텀 메시지
 │   ├── grasp_predictor_node/             # Phase 4 연동: 학습 모델 추론 노드
 │   ├── grasp_adapter_node/               # Phase 3: 좌표 변환 + 프리셋 매핑
 │   ├── hand_eye_calibration/             # Phase 2: calibration 루틴 + TF publisher
+│   ├── retry_supervisor_node/            # Phase 6: 실패 유형 판정 + 1회 복구 전략
 │   └── amazinghand_bringup/              # 실행/드라이버 launch 파일
 └── experiments/
-    └── compare_implicit_vs_explicit/     # Phase 5: 비교 실험 스크립트/결과
+    ├── compare_implicit_vs_explicit/     # Phase 5: 비교 실험 스크립트/결과
+    └── failure_taxonomy/                 # Phase 6: 실패 유형 분포·복구 전후 성공률 분석
 ```
 
 ---
@@ -181,10 +229,13 @@ first-repository/
 | Phase 3 Grasp adapter 구현 | AmazingHand 사양 문서 | 하드웨어 도착 전 설계 가능, 실측 검증은 도착 후 |
 | ROS2 통합 (Phase 2~4 연결) | 실물 로봇 풀세트 | 하드웨어 도착 후 |
 | Phase 5 비교 실험 | 실물 로봇, Phase 0/1/4 산출물 | 통합 완료 후 |
+| Phase 6 실패 분류 및 복구 분석 | 실물 로봇 + 시뮬레이션 (인식·계획 실패는 MuJoCo로 대량 확보 가능) | Phase 4~5와 병행 |
 
 **결론**: 지금 시점에서 즉시 시작 가능한 작업은 Phase 0(사전학습), Phase 1의 데이터 수집, Phase 4(기하 모델 설계) 세 가지다.
 하드웨어가 도착하는 시점에는 모델과 기하 baseline이 이미 준비되어 있어야 하며,
-그 시점부터는 Phase 2(hand-eye calibration) → Phase 3(adapter) → ROS2 통합 → Phase 5(비교 실험) 순으로 빠르게 진행하는 것이 목표다.
+그 시점부터는 Phase 2(hand-eye calibration) → Phase 3(adapter) → ROS2 통합 → Phase 5(비교 실험) → Phase 6(실패 분류·복구 분석) 순으로 진행한다.
+Phase 6은 Phase 5와 같은 trial 데이터를 공유하되 분석 목적이 다르므로, 로깅 스키마(`failure_type`)만 Phase 4 시점에
+미리 반영해두면 별도 재계측 없이 두 단계를 병행할 수 있다.
 
 ---
 
