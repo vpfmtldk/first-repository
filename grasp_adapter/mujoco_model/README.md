@@ -28,6 +28,20 @@ mujoco_model/
   제공하는 SO-ARM 전용 손목 어댑터 부품이다.
 - 각 저장소의 라이선스를 그대로 따른다. 실제 배포/사용 전 원 저장소의 라이선스 조건을 확인할 것.
 
+## 연결 구조
+
+```
+SO-101 gripperframe (스톡 2DoF 평행 그리퍼가 있던 자리)
+      |
+SO-ARM_Interface 어댑터 (Pollen Robotics 공식 부품, 실측 볼트홀 있는 판형 브라켓)
+      |
+AmazingHand 손바닥(ah_palm) + 손가락 4개
+```
+
+`build_combined.py`가 스톡 그리퍼(`moving_jaw_so101_v1`, `gripper` 관절)를 제거하고
+정확히 그 자리(`gripperframe` site)에 이 체인 전체를 붙인다. 어댑터의 정확한 회전
+방향은 조립 사진 대조 없이 추정한 값이라 시각 확인이 필요하다 (아래 "다음에 할 일" 참고).
+
 ## AmazingHand 모델 — 실측 vs 단순화
 
 `amazinghand/amazinghand.xml`은 CAD(STL)를 파이썬으로 직접 파싱해서 얻은

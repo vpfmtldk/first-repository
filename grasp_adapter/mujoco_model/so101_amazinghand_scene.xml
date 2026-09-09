@@ -24,11 +24,8 @@
       <default class="ah_amazinghand">
         <joint armature="0.001" damping="0.05"/>
         <general forcerange="-1 1" biastype="affine" gainprm="2" biasprm="0 -2"/>
-        <default class="ah_visual">
-          <geom contype="0" conaffinity="0" group="2" rgba="0.85 0.85 0.88 1"/>
-        </default>
-        <default class="ah_collision">
-          <geom group="3" rgba="0.9 0.3 0.2 0.3"/>
+        <default class="ah_palm_geom">
+          <geom type="box" rgba="0.75 0.75 0.8 1"/>
         </default>
       </default>
     </default>
@@ -60,11 +57,6 @@
     <mesh name="motor_holder_so101_wrist_v1" file="motor_holder_so101_wrist_v1.stl"/>
     <mesh name="sts3215_03a_no_horn_v1" file="sts3215_03a_no_horn_v1.stl"/>
     <mesh name="base_so101_v2" file="base_so101_v2.stl"/>
-    <mesh name="ah_palm_mesh" file="palm.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="ah_finger_frame_mesh" file="finger_frame_1.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="ah_proximal_mesh" file="proximal.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="ah_distal_mesh" file="distal.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="ah_wrist_interface_mesh" file="wrist_interface.stl" scale="0.001 0.001 0.001"/>
     <mesh name="ah_so_arm_interface_mesh" file="so_arm_interface.stl" scale="0.001 0.001 0.001"/>
   </asset>
 
@@ -119,68 +111,59 @@
                 <geom class="collision" pos="0 -0.000218214 0.000949706" quat="0 1 0 0" type="mesh" material="wrist_roll_follower_so101_v1_material" mesh="wrist_roll_follower_so101_v1"/>
                 <site name="gripperframe" quat="0.707107 0 0.707107 0" group="3" pos="-0.0079 -0.000218121 -0.0981274"/>
                 <body name="ah_ah_wrist_mount" childclass="ah_amazinghand" pos="-0.0079 -0.000218121 -0.0981274" quat="0.707107 0 0.707107 0">
-                  <geom class="ah_visual" type="mesh" mesh="ah_so_arm_interface_mesh"/>
-                  <geom class="ah_visual" type="mesh" mesh="ah_wrist_interface_mesh"/>
-                  <body name="ah_ah_palm" pos="0 0.03 0">
-                    <inertial pos="0 0.02 0" mass="0.15" diaginertia="0.00012 0.00012 8e-05"/>
-                    <geom class="ah_visual" type="mesh" mesh="ah_palm_mesh"/>
-                    <geom class="ah_collision" size="0.035 0.02 0.008" pos="0 0.02 0" type="box"/>
+                  <inertial pos="0 0.01 0" mass="0.02" diaginertia="1e-06 1e-06 1e-06"/>
+                  <geom pos="-0.02645 0.0115 -0.1052" quat="1 0 0 0" type="mesh" rgba="0.55 0.55 0.6 1" mesh="ah_so_arm_interface_mesh"/>
+                  <body name="ah_ah_palm" pos="0 0.02 0">
+                    <inertial pos="0 0.025 0" mass="0.15" diaginertia="0.00012 0.00012 8e-05"/>
+                    <geom class="ah_palm_geom" size="0.03 0.0225 0.0075" pos="0 0.0225 0"/>
                     <frame childclass="ah_amazinghand">
-                      <body name="ah_finger_base0" pos="-0.033 0.04 0">
+                      <body name="ah_finger_base0" pos="-0.033 0.045 0">
+                        <inertial pos="0 0 0" mass="0.003" diaginertia="1e-07 1e-07 1e-07"/>
                         <joint name="ah_finger_abduct0" range="-0.26 0.26"/>
-                        <geom class="ah_visual" type="mesh" mesh="ah_finger_frame_mesh"/>
                         <body name="ah_finger_link0">
                           <inertial pos="0 0.05 0" mass="0.01" diaginertia="4e-06 4e-06 1e-06"/>
                           <joint name="ah_finger_flex0" range="0 1.4" axis="1 0 0"/>
-                          <geom class="ah_visual" type="mesh" mesh="ah_proximal_mesh"/>
-                          <geom class="ah_visual" type="mesh" mesh="ah_distal_mesh"/>
-                          <geom class="ah_collision" size="0.007 0.0275" pos="0 0.0275 0" quat="0.707107 0.707107 0 0" type="capsule"/>
-                          <geom class="ah_collision" size="0.006 0.0225" pos="0 0.0725 0" quat="0.707107 0.707107 0 0" type="capsule"/>
+                          <geom size="0.007 0.0275" pos="0 0.0275 0" quat="0.707107 0.707107 0 0" type="capsule" rgba="0.9 0.6 0.1 1"/>
+                          <geom size="0.006 0.0225" pos="0 0.0725 0" quat="0.707107 0.707107 0 0" type="capsule" rgba="0.9 0.3 0.1 1"/>
                           <site name="ah_fingertip0" size="0.003" pos="0 0.095 0"/>
                         </body>
                       </body>
                     </frame>
                     <frame childclass="ah_amazinghand">
-                      <body name="ah_finger_base1" pos="-0.011 0.04 0">
+                      <body name="ah_finger_base1" pos="-0.011 0.045 0">
+                        <inertial pos="0 0 0" mass="0.003" diaginertia="1e-07 1e-07 1e-07"/>
                         <joint name="ah_finger_abduct1" range="-0.26 0.26"/>
-                        <geom class="ah_visual" type="mesh" mesh="ah_finger_frame_mesh"/>
                         <body name="ah_finger_link1">
                           <inertial pos="0 0.05 0" mass="0.01" diaginertia="4e-06 4e-06 1e-06"/>
                           <joint name="ah_finger_flex1" range="0 1.4" axis="1 0 0"/>
-                          <geom class="ah_visual" type="mesh" mesh="ah_proximal_mesh"/>
-                          <geom class="ah_visual" type="mesh" mesh="ah_distal_mesh"/>
-                          <geom class="ah_collision" size="0.007 0.0275" pos="0 0.0275 0" quat="0.707107 0.707107 0 0" type="capsule"/>
-                          <geom class="ah_collision" size="0.006 0.0225" pos="0 0.0725 0" quat="0.707107 0.707107 0 0" type="capsule"/>
+                          <geom size="0.007 0.0275" pos="0 0.0275 0" quat="0.707107 0.707107 0 0" type="capsule" rgba="0.9 0.6 0.1 1"/>
+                          <geom size="0.006 0.0225" pos="0 0.0725 0" quat="0.707107 0.707107 0 0" type="capsule" rgba="0.9 0.3 0.1 1"/>
                           <site name="ah_fingertip1" size="0.003" pos="0 0.095 0"/>
                         </body>
                       </body>
                     </frame>
                     <frame childclass="ah_amazinghand">
-                      <body name="ah_finger_base2" pos="0.011 0.04 0">
+                      <body name="ah_finger_base2" pos="0.011 0.045 0">
+                        <inertial pos="0 0 0" mass="0.003" diaginertia="1e-07 1e-07 1e-07"/>
                         <joint name="ah_finger_abduct2" range="-0.26 0.26"/>
-                        <geom class="ah_visual" type="mesh" mesh="ah_finger_frame_mesh"/>
                         <body name="ah_finger_link2">
                           <inertial pos="0 0.05 0" mass="0.01" diaginertia="4e-06 4e-06 1e-06"/>
                           <joint name="ah_finger_flex2" range="0 1.4" axis="1 0 0"/>
-                          <geom class="ah_visual" type="mesh" mesh="ah_proximal_mesh"/>
-                          <geom class="ah_visual" type="mesh" mesh="ah_distal_mesh"/>
-                          <geom class="ah_collision" size="0.007 0.0275" pos="0 0.0275 0" quat="0.707107 0.707107 0 0" type="capsule"/>
-                          <geom class="ah_collision" size="0.006 0.0225" pos="0 0.0725 0" quat="0.707107 0.707107 0 0" type="capsule"/>
+                          <geom size="0.007 0.0275" pos="0 0.0275 0" quat="0.707107 0.707107 0 0" type="capsule" rgba="0.9 0.6 0.1 1"/>
+                          <geom size="0.006 0.0225" pos="0 0.0725 0" quat="0.707107 0.707107 0 0" type="capsule" rgba="0.9 0.3 0.1 1"/>
                           <site name="ah_fingertip2" size="0.003" pos="0 0.095 0"/>
                         </body>
                       </body>
                     </frame>
                     <frame childclass="ah_amazinghand">
-                      <body name="ah_finger_base3" pos="0.033 0.04 0">
+                      <body name="ah_finger_base3" pos="0.033 0.045 0">
+                        <inertial pos="0 0 0" mass="0.003" diaginertia="1e-07 1e-07 1e-07"/>
                         <joint name="ah_finger_abduct3" range="-0.26 0.26"/>
-                        <geom class="ah_visual" type="mesh" mesh="ah_finger_frame_mesh"/>
                         <body name="ah_finger_link3">
                           <inertial pos="0 0.05 0" mass="0.01" diaginertia="4e-06 4e-06 1e-06"/>
                           <joint name="ah_finger_flex3" range="0 1.4" axis="1 0 0"/>
-                          <geom class="ah_visual" type="mesh" mesh="ah_proximal_mesh"/>
-                          <geom class="ah_visual" type="mesh" mesh="ah_distal_mesh"/>
-                          <geom class="ah_collision" size="0.007 0.0275" pos="0 0.0275 0" quat="0.707107 0.707107 0 0" type="capsule"/>
-                          <geom class="ah_collision" size="0.006 0.0225" pos="0 0.0725 0" quat="0.707107 0.707107 0 0" type="capsule"/>
+                          <geom size="0.007 0.0275" pos="0 0.0275 0" quat="0.707107 0.707107 0 0" type="capsule" rgba="0.9 0.6 0.1 1"/>
+                          <geom size="0.006 0.0225" pos="0 0.0725 0" quat="0.707107 0.707107 0 0" type="capsule" rgba="0.9 0.3 0.1 1"/>
                           <site name="ah_fingertip3" size="0.003" pos="0 0.095 0"/>
                         </body>
                       </body>
