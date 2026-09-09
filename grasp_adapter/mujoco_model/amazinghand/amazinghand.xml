@@ -1,0 +1,91 @@
+<mujoco model="amazinghand">
+  <!--
+    AmazingHand (Pollen Robotics, https://github.com/pollen-robotics/AmazingHand) — 단순화 MJCF
+
+    실측 근거: cad/stl/*.stl 파일을 직접 받아 바운딩박스를 측정해서 얻은 실제 치수 (mm, 코드로 측정):
+      proximal 링크 길이 ≈ 55mm (STL Y범위 -3.3~55.1)
+      distal   링크 길이 ≈ 45mm (STL Y범위 46.2~91.0, proximal과 약 9mm 겹치는 구간 = 관절부)
+      손가락 단면 폭     ≈ 16mm (proximal X범위), 10mm (distal X범위)
+      finger_frame(밑동) 폭 ≈ 20mm
+
+    단순화 지점 (실물은 이렇지 않음, 의도적으로 단순화):
+      실물은 손가락 하나당 서보 2개가 평행 링크(4절 링크)로 굴곡+외전을 만들어내는
+      언더액추에이티드 구조. 여기서는 그 대신
+        관절1(외전, z축) -> 관절2(굴곡, x축) 순서의 단순 힌지 2개로 근사하고,
+        proximal+distal은 하나의 강체로 취급한다.
+      -> 8DOF(4손가락 x 2관절) 총 개수는 실물과 동일하게 맞췄지만,
+         관절 하나하나의 정확한 기구학은 실물과 다르다.
+      -> 손 모양 프리셋(PINCH/TRIPOD/WRAP) 검증용으로는 충분하지만,
+         정밀한 접촉력 시뮬레이션에는 부족하다.
+
+    좌표 단위: mesh scale 0.001 로 STL의 mm 단위를 MuJoCo의 m 단위로 변환.
+  -->
+
+  <compiler angle="radian" meshdir="../assets" autolimits="true"/>
+
+  <default>
+    <default class="amazinghand">
+      <joint damping="0.05" armature="0.001"/>
+      <position kp="2.0" forcerange="-1 1"/>
+      <default class="visual">
+        <geom contype="0" conaffinity="0" group="2" rgba="0.85 0.85 0.88 1"/>
+      </default>
+      <default class="collision">
+        <geom group="3" rgba="0.9 0.3 0.2 0.3"/>
+      </default>
+    </default>
+  </default>
+
+  <asset>
+    <mesh name="palm_mesh" file="palm.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="finger_frame_mesh" file="finger_frame_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="proximal_mesh" file="proximal.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="distal_mesh" file="distal.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="wrist_interface_mesh" file="wrist_interface.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="so_arm_interface_mesh" file="so_arm_interface.stl" scale="0.001 0.001 0.001"/>
+  </asset>
+
+  <worldbody>
+    <body name="ah_wrist_mount" childclass="amazinghand">
+      <!-- SO-ARM 어댑터 + 손목 인터페이스 (실물 부품 그대로, 시각용) -->
+      <geom class="visual" type="mesh" mesh="so_arm_interface_mesh"/>
+      <geom class="visual" type="mesh" mesh="wrist_interface_mesh"/>
+
+      <body name="ah_palm" pos="0 0.03 0">
+        <inertial pos="0 0.02 0" mass="0.15" diaginertia="0.00012 0.00012 0.00008"/>
+        <geom class="visual" type="mesh" mesh="palm_mesh"/>
+        <geom class="collision" type="box" size="0.035 0.02 0.008" pos="0 0.02 0"/>
+
+        <!-- 손가락 4개, palm 폭 방향(x)으로 22mm 간격 배치 (실측 finger_frame 폭 20mm 기준 추정) -->
+        <replicate count="4" offset="0.022 0 0" euler="0 0 0">
+        <body name="finger_base" pos="-0.033 0.04 0">
+          <geom class="visual" type="mesh" mesh="finger_frame_mesh"/>
+
+          <!-- 관절1: 외전(abduction) — 실물은 gimbal 2축 관절의 한 축을 근사 -->
+          <joint name="finger_abduct" type="hinge" axis="0 0 1" range="-0.26 0.26"/>
+
+          <body name="finger_link" pos="0 0 0">
+            <!-- 관절2: 굴곡(flexion) — proximal+distal을 하나의 강체로 근사 -->
+            <joint name="finger_flex" type="hinge" axis="1 0 0" range="0 1.4"/>
+            <inertial pos="0 0.05 0" mass="0.01" diaginertia="4e-6 4e-6 1e-6"/>
+
+            <geom class="visual" type="mesh" mesh="proximal_mesh"/>
+            <geom class="visual" type="mesh" mesh="distal_mesh"/>
+
+            <!-- 충돌용 캡슐 2개: 실측 링크 길이(55mm, 45mm) 그대로 사용 -->
+            <geom class="collision" type="capsule" size="0.007" fromto="0 0 0  0 0.055 0"/>
+            <geom class="collision" type="capsule" size="0.006" fromto="0 0.050 0  0 0.095 0"/>
+
+            <site name="fingertip" pos="0 0.095 0" size="0.003"/>
+          </body>
+        </body>
+        </replicate>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position class="amazinghand" name="f0_abduct" joint="finger_abduct" ctrlrange="-0.26 0.26"/>
+    <position class="amazinghand" name="f0_flex" joint="finger_flex" ctrlrange="0 1.4"/>
+  </actuator>
+</mujoco>
