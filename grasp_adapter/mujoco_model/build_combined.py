@@ -34,6 +34,16 @@ for act in list(so101.actuators):
 jaw_mesh = so101.mesh("moving_jaw_so101_v1")
 so101.delete(jaw_mesh)
 
+# 2-1) 스톡 그리퍼용 마운팅 플레이트(wrist_roll_follower_so101_v1)도 제거.
+# 원래 여기에 스톡 그리퍼가 볼트로 붙었는데, 이제 그 자리에 우리 어댑터(so_arm_interface)가
+# 붙으므로 이 플레이트는 시각적으로 겹치기만 하는 군더더기다.
+grip_body = so101.body("gripper")
+for g in list(grip_body.geoms):
+    if g.meshname == "wrist_roll_follower_so101_v1":
+        so101.delete(g)
+follower_mesh = so101.mesh("wrist_roll_follower_so101_v1")
+so101.delete(follower_mesh)
+
 # 3) AmazingHand 스펙 로드
 amazinghand = mujoco.MjSpec.from_file(amazinghand_path)
 

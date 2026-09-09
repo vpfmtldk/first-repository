@@ -48,7 +48,9 @@
     <!-- SO-101 gripperframe site에 부착되는 지점 -->
     <body name="ah_wrist_mount" childclass="amazinghand">
       <inertial pos="0 0.01 0" mass="0.02" diaginertia="1e-6 1e-6 1e-6"/>
-      <geom type="mesh" mesh="so_arm_interface_mesh" pos="-0.02645 0.0115 -0.10520"
+      <!-- 어댑터 판: 정확한 재중심화 오프셋이 엉뚱한 방향으로 튀어나가서(아래로 분리돼 보임),
+           일단 부착 원점에 가깝게 둔다 — 정밀한 위치는 실측/조립 사진 대조 후 조정 필요 -->
+      <geom type="mesh" mesh="so_arm_interface_mesh" pos="0 0 0"
             rgba="0.55 0.55 0.6 1"/>
 
       <!-- 손바닥 모듈: hand_plate + palm_shell + top_shell (셋이 같은 좌표계, pos=0으로 겹침) -->
