@@ -48,8 +48,8 @@ flowchart TB
         F["Hand-Eye Calibration\n(유일한 하드웨어 필수 지점)"]
         G["좌표 변환\nImage frame → Camera frame → Robot base frame"]
         H["Grasp Representation Adapter\n(2DoF → 멀티핑거 프리셋)"]
-        I["MoveIt Motion Planning"]
-        J["AmazingHand 실행"]
+        I["수치 IK\n(자코비안 기반, ROS2/MoveIt 없이 직접 구현)"]
+        J["AmazingHand 실행\n(MuJoCo 시뮬레이션 또는 실물)"]
     end
 
     E -->|"예측: (u,v), θ"| G
@@ -66,7 +66,7 @@ flowchart TB
 
 - **오프라인 단계**: 실물 로봇 없이 GPU만 있으면 진행. 지금 바로 착수 가능.
 - **파인튜닝 단계**: 로봇 팔 동작 없이 카메라만 있으면 진행 가능 (물체를 손으로 배치하고 촬영, 또는 teleoperation으로 수집).
-- **실물 로봇 단계**: hand-eye calibration이 끝나야 좌표 변환이 의미를 가지므로, 이 시점부터 실제 파지 실행이 가능해짐.
+- **실물 로봇 단계**: hand-eye calibration이 끝나야 좌표 변환이 의미를 가지므로, 이 시점부터 실제 파지 실행이 가능해짐. 단, F(calibration) 이후의 G~J는 실물 없이 **MuJoCo 시뮬레이션으로도 그대로 실행 가능** — 이 단계 이름이 "실물 로봇 단계"인 건 Hand-Eye Calibration 자체가 실물을 요구하기 때문이지, G~J 전부가 실물을 요구해서가 아니다.
 
 ---
 
@@ -162,30 +162,41 @@ Phase 5의 성공/실패 이분법을 넘어, 반복 실행 중 발생하는 실
 
 ---
 
-## 4. ROS2 파이프라인 설계 (통합 시점)
+## 4. MuJoCo 파이프라인 설계 (통합 시점)
 
-실물 로봇 통합 시 다음과 같은 노드 구성을 제안한다. (지금 단계에서는 설계만 해두고,
-Phase 0~1은 이 그래프 밖에서 독립적으로 개발 가능)
+**ROS2 없이, 파이썬 함수 체인 + MuJoCo Python API만으로 구성한다.** 실물 로봇이 오기 전 단계에서는
+분산 노드·실시간 통신 같은 ROS2의 강점이 아직 필요 없고, 오히려 설치·디버깅 부담만 늘어난다.
+나중에 실물 배포 단계에서 ROS2가 필요해지면, 아래 함수들을 그대로 ROS2 노드로 감싸기만 하면 되므로
+지금 짜는 로직은 버려지지 않는다.
 
 ```mermaid
 flowchart LR
-    CAM["camera_node\n(sensor_msgs/Image)"] --> INFER["grasp_predictor_node\n(학습 모델 추론)"]
-    INFER -->|"GraspPose2D.msg\n(u, v, theta, preset_id)"| ADAPT["grasp_adapter_node\n(좌표 변환 + 프리셋 매핑)"]
-    TF["hand_eye TF\n(camera → base_link)"] --> ADAPT
-    ADAPT -->|"geometry_msgs/PoseStamped\n+ HandPreset"| MOVEIT["MoveIt2\nmove_group"]
-    MOVEIT --> EXEC["amazinghand_controller\n(FollowJointTrajectory)"]
-    EXEC -.실패 감지.-> SUP["retry_supervisor_node\n(실패유형 판정 + 1회 복구)"]
+    CAM["camera 캡처\n(OpenCV)"] --> INFER["grasp_predictor()\n(학습 모델 추론)"]
+    INFER -->|"GraspPose2D\n(u, v, theta, preset_id)"| ADAPT["grasp_adapter()\n(좌표 변환 + 프리셋 매핑)"]
+    CALIB["hand-eye 변환\n(R, t)"] --> ADAPT
+    ADAPT -->|"목표 pose\n+ HandPreset"| IK["solve_ik()\n자코비안 기반 수치 IK"]
+    IK --> EXEC["mj_step() 반복\n(MuJoCo로 직접 관절 이동)"]
+    EXEC -.실패 감지.-> SUP["retry_supervisor()\n(실패유형 판정 + 1회 복구)"]
     SUP -.재추론 재시도.-> INFER
-    SUP -.재플래닝 재시도.-> MOVEIT
-    INFER -.로깅.-> LOG["평가/비교 실험 로거\n(rosbag2)"]
-    SUP -->|"FailureEvent.msg\n(failure_type, recovered)"| LOG
-    GEOM["explicit_geometry_node\n(기하 모델, 비교용)"] -.동일 입력.-> LOG
+    SUP -.재IK 재시도.-> IK
+    INFER -.로깅.-> LOG["실행 로거\n(CSV/JSON)"]
+    SUP -->|"FailureEvent\n(failure_type, recovered)"| LOG
+    GEOM["explicit_geometry()\n(기하 모델, 비교용)"] -.동일 입력.-> LOG
 ```
 
-- **커스텀 메시지 제안**: `GraspPose2D.msg` (`float32 u, float32 v, float32 theta, string preset_id, float32 confidence`)
-- **grasp_adapter_node**: 이미지 좌표 → 카메라 좌표(핀홀 모델 역투영, 필요시 깊이 추정) → TF로 base_link 변환 → MoveIt 목표 pose 생성
-- **retry_supervisor_node** (Phase 6): 실행 실패를 감지해 인식/계획/궤적 오버슈트/파지/배치 5가지 유형으로 분류하고, 유형별 1회 복구 전략을 실행. `FailureEvent.msg` (`string failure_type, string phase, int32 retry_count, bool recovered`)로 로깅
-- **rosbag2 로깅**: Phase 5 비교 실험과 Phase 6 실패 분석을 위해 추론 결과/기하 모델 결과/실제 실행 결과/`failure_type`을 항상 함께 기록
+**ROS2 버전과의 대응 관계 (뭘 무엇으로 바꿨는지)**
+
+| ROS2 버전 | MuJoCo-only 버전 | 잃는 것 |
+|---|---|---|
+| `grasp_predictor_node` / `grasp_adapter_node` | 그냥 파이썬 함수 (`grasp_adapter_demo.py`에 이미 있음) | 없음 — pub/sub이 함수 호출로 바뀔 뿐 |
+| `GraspPose2D.msg` | Python dataclass (같은 필드) | 없음 |
+| MoveIt2 `move_group` (경로 계획) | 직접 구현하는 자코비안 기반 수치 IK (`mj_jac()` 활용, damped least squares) | **충돌 회피 경로 계획** — 지금 시나리오(테이블 위 물체 하나 집기)엔 큰 문제 아님 |
+| `amazinghand_controller` (FollowJointTrajectory) | 목표 관절각을 MuJoCo position actuator에 넣고 `mj_step()` 반복 | 없음 — 실시간성이 필요 없는 오프라인 검증이라 무관 |
+| `rosbag2` | CSV/JSON 로거 | 없음 — 재생(replay) 기능은 없지만 분석엔 충분 |
+| URDF/SRDF, `mujoco_ros2_control` | 이미 만든 MJCF(`so101_amazinghand_scene.xml`)를 그대로 사용 | 없음 |
+
+- **retry_supervisor()** (Phase 6): 실행 실패를 감지해 인식/계획/궤적 오버슈트/파지/배치 5가지 유형으로 분류하고, 유형별 1회 복구 전략을 실행. `FailureEvent` 레코드(`failure_type, phase, retry_count, recovered`)로 로깅
+- **CSV/JSON 로깅**: Phase 5 비교 실험과 Phase 6 실패 분석을 위해 추론 결과/기하 모델 결과/실제 실행 결과/`failure_type`을 항상 함께 기록
 
 ---
 
@@ -203,13 +214,13 @@ first-repository/
 │   └── configs/
 ├── geometry_baseline/                    # Phase 4: 명시적 기하 모델 (ROS 비의존)
 │   └── explicit_grasp_geometry.py
-├── ros2_ws/src/
-│   ├── grasp_msgs/                       # GraspPose2D.msg, FailureEvent.msg 등 커스텀 메시지
-│   ├── grasp_predictor_node/             # Phase 4 연동: 학습 모델 추론 노드
-│   ├── grasp_adapter_node/               # Phase 3: 좌표 변환 + 프리셋 매핑
-│   ├── hand_eye_calibration/             # Phase 2: calibration 루틴 + TF publisher
-│   ├── retry_supervisor_node/            # Phase 6: 실패 유형 판정 + 1회 복구 전략
-│   └── amazinghand_bringup/              # 실행/드라이버 launch 파일
+├── grasp_adapter/                        # Phase 2~4: MuJoCo 기반 파이프라인 (ROS2 비의존)
+│   ├── mujoco_model/                     # SO-101 + AmazingHand 결합 MJCF (완성)
+│   ├── hand_eye_solve.py                 # Phase 2: 터치 좌표 -> (R, t) 계산 (완성)
+│   ├── grasp_adapter_demo.py             # Phase 3: 좌표 변환 + 프리셋 매핑 (완성)
+│   ├── ik_solver.py                      # Phase 4: 자코비안 기반 수치 IK
+│   ├── retry_supervisor.py               # Phase 6: 실패 유형 판정 + 1회 복구 전략
+│   └── run_pipeline.py                   # Phase 4: 전체 파이프라인 실행 진입점
 └── experiments/
     ├── compare_implicit_vs_explicit/     # Phase 5: 비교 실험 스크립트/결과
     └── failure_taxonomy/                 # Phase 6: 실패 유형 분포·복구 전후 성공률 분석
@@ -226,28 +237,29 @@ first-repository/
 | Phase 1 파인튜닝 데이터 수집 | 카메라 (로봇 팔 불필요) | **즉시** |
 | Phase 1 파인튜닝 학습 | GPU, 위 데이터 | Phase 0 완료 후 |
 | Phase 2 Hand-eye calibration | LeKiwi + 카메라 (실물) | **하드웨어 도착 후** |
-| Phase 3 Grasp adapter 구현 | AmazingHand 사양 문서 | 하드웨어 도착 전 설계 가능, 실측 검증은 도착 후 |
-| ROS2 통합 (Phase 2~4 연결) | 실물 로봇 풀세트 | 하드웨어 도착 후 |
-| Phase 5 비교 실험 | 실물 로봇, Phase 0/1/4 산출물 | 통합 완료 후 |
-| Phase 6 실패 분류 및 복구 분석 | 실물 로봇 + 시뮬레이션 (인식·계획 실패는 MuJoCo로 대량 확보 가능) | Phase 4~5와 병행 |
+| Phase 3 Grasp adapter 구현 | AmazingHand 사양 문서 | 하드웨어 도착 전 설계 가능, 실측 검증은 도착 후 — **완료, `grasp_adapter_demo.py`** |
+| MuJoCo 파이프라인 통합 (Phase 2~4 연결) | 없음 — MuJoCo만 있으면 됨 | **하드웨어 무관, 즉시 가능** |
+| Phase 5 비교 실험 | MuJoCo(대량) + 실물 로봇(소량 검증) | 파이프라인 통합 완료 후 |
+| Phase 6 실패 분류 및 복구 분석 | MuJoCo(대량) + 실물 로봇(소량 검증) | Phase 4~5와 병행 |
 
-**결론**: 지금 시점에서 즉시 시작 가능한 작업은 Phase 0(사전학습), Phase 1의 데이터 수집, Phase 4(기하 모델 설계) 세 가지다.
-하드웨어가 도착하는 시점에는 모델과 기하 baseline이 이미 준비되어 있어야 하며,
-그 시점부터는 Phase 2(hand-eye calibration) → Phase 3(adapter) → ROS2 통합 → Phase 5(비교 실험) → Phase 6(실패 분류·복구 분석) 순으로 진행한다.
-Phase 6은 Phase 5와 같은 trial 데이터를 공유하되 분석 목적이 다르므로, 로깅 스키마(`failure_type`)만 Phase 4 시점에
-미리 반영해두면 별도 재계측 없이 두 단계를 병행할 수 있다.
+**결론**: ROS2를 빼면서 하드웨어 의존점이 하나 더 줄었다 — 이제 **Phase 2(hand-eye calibration)만 실물이 꼭 필요**하고,
+나머지(Phase 0/1/3/4 설계, MuJoCo 파이프라인 통합, Phase 5/6의 대량 trial)는 전부 MuJoCo만으로 지금 진행할 수 있다.
+실물 하드웨어는 ① hand-eye calibration 실측, ② 시뮬레이션 결과를 검증하는 소규모 실물 trial, 이 두 지점에만 필요하다.
+Phase 2 → MuJoCo 파이프라인 통합 → Phase 5(비교 실험) → Phase 6(실패 분류·복구 분석) 순으로 진행하되,
+Phase 2를 뺀 나머지는 실물 도착 전에 대부분 끝내두는 게 목표다.
 
 ---
 
-## 7. 다음 학습 포인트 (ROS2/MoveIt 성장 관점)
+## 7. 다음 학습 포인트
 
-이 프로젝트를 진행하면서 익혀두면 좋은 개념들을 실행 순서에 맞춰 정리한다.
+이 프로젝트를 진행하면서 익혀두면 좋은 개념들을 실행 순서에 맞춰 정리한다. ROS2를 빼기로 하면서
+일부는 "실물 배포 단계에서 필요해지면"으로 미뤘다.
 
-1. **TF2**: `camera_optical_frame`, `base_link`, `end_effector` 간의 좌표 변환 개념과 `tf2_ros` 사용법 — hand-eye calibration 이해의 전제
-2. **hand-eye calibration 수학**: `AX = XB` 문제의 의미, eye-in-hand vs eye-to-hand 차이
-3. **MoveIt2 motion planning**: `PoseStamped` 목표를 받아 충돌 없는 경로를 생성하는 과정, 그리고 그리퍼 대신 커스텀 핸드를 MoveIt에 등록하는 방법(URDF/SRDF, end-effector group 정의)
-4. **ROS2 커스텀 메시지/노드 설계**: `.msg` 정의부터 `rclpy`/`rclcpp` 노드 작성, QoS 설정까지
-5. **rosbag2**: 실험 재현성과 비교 실험(Phase 5)을 위한 데이터 기록/재생
+1. **좌표 변환 수학** — `camera_optical_frame → base_link` 변환을 행렬 연산으로 직접 구현하는 법 (`hand_eye_solve.py`로 이미 실습함). ROS2의 `tf2_ros`가 자동으로 해주는 걸 지금은 직접 짠 것.
+2. **hand-eye calibration 수학**: `AX = XB` 문제의 의미, eye-in-hand vs eye-to-hand 차이 — 완료
+3. **자코비안 기반 수치 IK**: 자코비안 행렬이 뭔지, damped least squares로 목표 pose에 도달하는 관절각을 푸는 법, 특이점(singularity) 근처에서 왜 불안정해지는지 — MoveIt2가 내부적으로 하던 일을 직접 구현
+4. **MuJoCo 액추에이터 제어**: position actuator에 목표값을 주고 `mj_step()`을 반복해서 실제로 관절이 움직이게 하는 법
+5. *(나중에, 실물 배포 단계)* **MoveIt2 motion planning**과 **ROS2 커스텀 메시지/노드 설계**: 지금 만든 함수 체인을 ROS2 노드로 감쌀 때 필요. 지금 당장은 몰라도 프로젝트 진행에 지장 없음
 
-필요하면 이 중 아무 항목이나 골라서 더 깊이 들어가도 좋다 — 예를 들어 hand-eye calibration의 `AX=XB` 수식부터 차근차근 풀어볼 수도 있고,
-MoveIt에 AmazingHand를 end-effector로 등록하는 URDF 작업부터 실습해볼 수도 있다.
+필요하면 이 중 아무 항목이나 골라서 더 깊이 들어가도 좋다 — 예를 들어 자코비안 기반 IK를 직접 유도해볼 수도 있고,
+MuJoCo의 `mj_jac()` 함수가 내부적으로 뭘 계산하는지부터 뜯어볼 수도 있다.
