@@ -1,0 +1,66 @@
+<mujoco model="hcr3a">
+  <compiler angle="radian"/>
+
+  <asset>
+    <mesh name="base_link" content_type="model/stl" file="meshes/visual/base_link.STL"/>
+    <mesh name="Link_1" content_type="model/stl" file="meshes/visual/Link_1.STL"/>
+    <mesh name="Link_2" content_type="model/stl" file="meshes/visual/Link_2.STL"/>
+    <mesh name="Link_3" content_type="model/stl" file="meshes/visual/Link_3.STL"/>
+    <mesh name="Link_4" content_type="model/stl" file="meshes/visual/Link_4.STL"/>
+    <mesh name="Link_5" content_type="model/stl" file="meshes/visual/Link_5.STL"/>
+    <mesh name="Link_6" content_type="model/stl" file="meshes/visual/Link_6.STL"/>
+    <mesh name="Camera_Link" content_type="model/stl" file="meshes/visual/Camera_Link.STL"/>
+    <mesh name="Forcesensor_Link" content_type="model/stl" file="meshes/visual/Forcesensor_Link.STL"/>
+    <mesh name="Effector_Link" content_type="model/stl" file="meshes/visual/Effector_Link.STL"/>
+    <mesh name="Finger1_Link" content_type="model/stl" file="meshes/visual/Finger1_Link.STL"/>
+    <mesh name="Finger2_Link" content_type="model/stl" file="meshes/visual/Finger2_Link.STL"/>
+  </asset>
+
+  <worldbody>
+    <geom quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="base_link"/>
+    <body name="link_1" pos="0 0 0.03769" quat="0.499998 0.5 0.500002 0.5">
+      <inertial pos="-0.00973377 0.0753973 -6.52426e-08" quat="0.67252 0.672511 0.21845 0.21846" mass="1.07574" diaginertia="0.00200369 0.00198147 0.00106503"/>
+      <joint name="joint_1" range="-6.2832 6.2832" actuatorfrcrange="-150 150" axis="0 1 0"/>
+      <geom pos="0 0 0" quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="Link_1"/>
+      <body name="link_2" pos="-0.06 0.10091 0" quat="0.707105 -0.707108 0 0">
+        <inertial pos="-0.0855708 0.1005 0" quat="0.499999 0.500001 -0.500001 0.499999" mass="2.3011" diaginertia="0.0052285 0.00385494 0.00346751"/>
+        <joint name="joint_2" range="-6.2832 6.2832" actuatorfrcrange="-150 150" axis="-1 0 0"/>
+        <geom pos="0 0 0" quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="Link_2"/>
+        <body name="link_3" pos="0 0.201 0">
+          <inertial pos="0.0396314 0.129914 -1.90388e-05" quat="0.509312 0.489982 -0.509791 0.490544" mass="1.57952" diaginertia="0.00680957 0.00642687 0.0013857"/>
+          <joint name="joint_3" range="-2.7925 2.7925" actuatorfrcrange="-150 150" axis="-1 0 0"/>
+          <geom pos="0 0 0" quat="1 0 0 0" type="mesh" rgba="1 0.454902 0 1" mesh="Link_3"/>
+          <body name="link_4" pos="-0.043643 0.2815 -0.00013246" quat="0.707105 -0.707108 0 0">
+            <inertial pos="-0.0407592 0.0332666 -4.68821e-05" quat="0.416983 0.571262 -0.416517 0.571225" mass="0.519193" diaginertia="0.00070194 0.000700896 0.000292652"/>
+            <joint name="joint_4" range="-6.2832 6.2832" actuatorfrcrange="-150 150" axis="-1 0 0"/>
+            <geom quat="1 0 0 0" type="mesh" rgba="1 0.454902 0 1" mesh="Link_4"/>
+            <body name="link_5" pos="-0.044744 0.103 0">
+              <inertial pos="-0.0332659 0.0405154 -3.79421e-05" quat="0.109761 0.698306 -0.108728 0.698928" mass="0.519193" diaginertia="0.00070194 0.000700896 0.000292652"/>
+              <joint name="joint_5" range="-6.2832 6.2832" actuatorfrcrange="-150 150" axis="0 1 0"/>
+              <geom pos="0 0 0" quat="1 0 0 0" type="mesh" rgba="1 0.454902 0 1" mesh="Link_5"/>
+              <body name="link_6" pos="-0.10284 0.0445 -0.00011784">
+                <inertial pos="-0.0656591 0.024678 0.00248249" quat="0.999303 -0.0200339 -0.00164745 -0.0314695" mass="0.580947" diaginertia="0.00520241 0.00475094 0.00228794"/>
+                <joint name="joint_6" range="-3.146 3.146" actuatorfrcrange="-150 150" axis="-1 0 0"/>
+                <geom quat="1 0 0 0" type="mesh" rgba="1 1 1 1" mesh="Link_6"/>
+                <geom pos="-0.078661 0.105 -0.00053185" quat="0.499163 0.501405 0.501381 -0.498043" type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Camera_Link"/>
+                <geom pos="-0.0611667 4.94381e-06 -6.70811e-05" quat="-0.00158668 0.707508 0.0023593 -0.7067" type="mesh" rgba="0.666667 0.698039 0.768627 1" mesh="Forcesensor_Link"/>
+                <geom pos="-0.219167 0.00137526 -0.00163258" quat="-0.268119 0.654593 -0.654326 -0.267355" type="mesh" rgba="0.792157 0.819608 0.933333 1" mesh="Effector_Link"/>
+                <geom size="0.010025 0.0495 0.0115" pos="-0.0691616 0.10551 -0.000518172" quat="-1.65368e-05 0.000791754 -0.705131 -0.709077" type="box"/>
+                <body name="finger1_Link" pos="-0.175679 -0.00883163 0.00880161" quat="0.27363 0.651724 0.273278 0.652459">
+                  <inertial pos="-0.00559183 0.0123672 -0.0226798" quat="0.970401 -0.221092 -0.0935044 -0.0264156" mass="0.0168276" diaginertia="3.38709e-06 2.39147e-06 2.27939e-06"/>
+                  <joint name="finger1" type="slide" range="-0.1 0.03" actuatorfrcrange="-150 150" axis="0 -1 0"/>
+                  <geom quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="Finger1_Link"/>
+                </body>
+                <body name="finger2_Link" pos="-0.175658 0.00838157 -0.00871552" quat="0.27363 0.651724 0.273278 0.652459">
+                  <inertial pos="0.00559183 -0.0123999 -0.0226798" quat="0.970401 0.221092 0.0935044 -0.0264156" mass="0.0168276" diaginertia="3.38709e-06 2.39147e-06 2.27939e-06"/>
+                  <joint name="finger2" type="slide" range="-0.03 0.1" actuatorfrcrange="-150 150" axis="0 -1 0"/>
+                  <geom quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="Finger2_Link"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

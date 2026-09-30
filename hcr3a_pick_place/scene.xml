@@ -1,0 +1,127 @@
+<mujoco model="hcr3a_pick_and_place">
+  <!-- HCR-3A arm + 2-finger gripper, pick-and-place scene.
+       Robot kinematics/meshes come from hcr3a_mujoco.xml; mesh geoms are visual only,
+       grasping is done with box pads on the fingertips. -->
+  <compiler angle="radian"/>
+  <option timestep="0.002" integrator="implicitfast" cone="elliptic" impratio="10"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720" azimuth="140" elevation="-25"/>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <quality shadowsize="4096"/>
+  </visual>
+
+  <default>
+    <default class="visual">
+      <geom contype="0" conaffinity="0" group="2"/>
+    </default>
+    <default class="pad">
+      <geom type="box" size="0.015 0.005 0.0125" friction="2 0.05 0.001" solref="0.004 1"
+            condim="4" rgba="0.2 0.2 0.8 0.3" group="3"/>
+    </default>
+    <default class="arm">
+      <joint damping="2" armature="0.1"/>
+    </default>
+    <default class="finger">
+      <joint damping="5" armature="0.01"/>
+    </default>
+  </default>
+
+  <asset>
+    <mesh name="base_link" content_type="model/stl" file="meshes/visual/base_link.STL"/>
+    <mesh name="Link_1" content_type="model/stl" file="meshes/visual/Link_1.STL"/>
+    <mesh name="Link_2" content_type="model/stl" file="meshes/visual/Link_2.STL"/>
+    <mesh name="Link_3" content_type="model/stl" file="meshes/visual/Link_3.STL"/>
+    <mesh name="Link_4" content_type="model/stl" file="meshes/visual/Link_4.STL"/>
+    <mesh name="Link_5" content_type="model/stl" file="meshes/visual/Link_5.STL"/>
+    <mesh name="Link_6" content_type="model/stl" file="meshes/visual/Link_6.STL"/>
+    <mesh name="Camera_Link" content_type="model/stl" file="meshes/visual/Camera_Link.STL"/>
+    <mesh name="Forcesensor_Link" content_type="model/stl" file="meshes/visual/Forcesensor_Link.STL"/>
+    <mesh name="Effector_Link" content_type="model/stl" file="meshes/visual/Effector_Link.STL"/>
+    <mesh name="Finger1_Link" content_type="model/stl" file="meshes/visual/Finger1_Link.STL"/>
+    <mesh name="Finger2_Link" content_type="model/stl" file="meshes/visual/Finger2_Link.STL"/>
+  
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.25 0.28 0.32" rgb2="0.3 0.33 0.38" width="512" height="512"/>
+    <material name="grid" texture="grid" texrepeat="8 8" reflectance="0.15"/>
+    <texture name="sky" type="skybox" builtin="gradient" rgb1="0.35 0.45 0.6" rgb2="0.05 0.05 0.1" width="512" height="512"/>
+    <material name="wood" rgba="0.55 0.4 0.25 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0.3 0 2" dir="0 0 -1" directional="true" castshadow="true"/>
+    <geom name="floor" type="plane" size="2 2 0.05" material="grid"/>
+
+    <geom class="visual" quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="base_link"/>
+    <body gravcomp="1" name="link_1" pos="0 0 0.03769" quat="0.499998 0.5 0.500002 0.5">
+      <inertial pos="-0.00973377 0.0753973 -6.52426e-08" quat="0.67252 0.672511 0.21845 0.21846" mass="1.07574" diaginertia="0.00200369 0.00198147 0.00106503"/>
+      <joint class="arm" name="joint_1" range="-6.2832 6.2832" actuatorfrcrange="-150 150" axis="0 1 0"/>
+      <geom class="visual" pos="0 0 0" quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="Link_1"/>
+      <body gravcomp="1" name="link_2" pos="-0.06 0.10091 0" quat="0.707105 -0.707108 0 0">
+        <inertial pos="-0.0855708 0.1005 0" quat="0.499999 0.500001 -0.500001 0.499999" mass="2.3011" diaginertia="0.0052285 0.00385494 0.00346751"/>
+        <joint class="arm" name="joint_2" range="-6.2832 6.2832" actuatorfrcrange="-150 150" axis="-1 0 0"/>
+        <geom class="visual" pos="0 0 0" quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="Link_2"/>
+        <body gravcomp="1" name="link_3" pos="0 0.201 0">
+          <inertial pos="0.0396314 0.129914 -1.90388e-05" quat="0.509312 0.489982 -0.509791 0.490544" mass="1.57952" diaginertia="0.00680957 0.00642687 0.0013857"/>
+          <joint class="arm" name="joint_3" range="-2.7925 2.7925" actuatorfrcrange="-150 150" axis="-1 0 0"/>
+          <geom class="visual" pos="0 0 0" quat="1 0 0 0" type="mesh" rgba="1 0.454902 0 1" mesh="Link_3"/>
+          <body gravcomp="1" name="link_4" pos="-0.043643 0.2815 -0.00013246" quat="0.707105 -0.707108 0 0">
+            <inertial pos="-0.0407592 0.0332666 -4.68821e-05" quat="0.416983 0.571262 -0.416517 0.571225" mass="0.519193" diaginertia="0.00070194 0.000700896 0.000292652"/>
+            <joint class="arm" name="joint_4" range="-6.2832 6.2832" actuatorfrcrange="-150 150" axis="-1 0 0"/>
+            <geom class="visual" quat="1 0 0 0" type="mesh" rgba="1 0.454902 0 1" mesh="Link_4"/>
+            <body gravcomp="1" name="link_5" pos="-0.044744 0.103 0">
+              <inertial pos="-0.0332659 0.0405154 -3.79421e-05" quat="0.109761 0.698306 -0.108728 0.698928" mass="0.519193" diaginertia="0.00070194 0.000700896 0.000292652"/>
+              <joint class="arm" name="joint_5" range="-6.2832 6.2832" actuatorfrcrange="-150 150" axis="0 1 0"/>
+              <geom class="visual" pos="0 0 0" quat="1 0 0 0" type="mesh" rgba="1 0.454902 0 1" mesh="Link_5"/>
+              <body gravcomp="1" name="link_6" pos="-0.10284 0.0445 -0.00011784">
+                <inertial pos="-0.0656591 0.024678 0.00248249" quat="0.999303 -0.0200339 -0.00164745 -0.0314695" mass="0.580947" diaginertia="0.00520241 0.00475094 0.00228794"/>
+                <joint class="arm" name="joint_6" range="-3.146 3.146" actuatorfrcrange="-150 150" axis="-1 0 0"/>
+                <geom class="visual" quat="1 0 0 0" type="mesh" rgba="1 1 1 1" mesh="Link_6"/>
+                <geom class="visual" pos="-0.078661 0.105 -0.00053185" quat="0.499163 0.501405 0.501381 -0.498043" type="mesh" rgba="0.752941 0.752941 0.752941 1" mesh="Camera_Link"/>
+                <geom class="visual" pos="-0.0611667 4.94381e-06 -6.70811e-05" quat="-0.00158668 0.707508 0.0023593 -0.7067" type="mesh" rgba="0.666667 0.698039 0.768627 1" mesh="Forcesensor_Link"/>
+                <geom class="visual" pos="-0.219167 0.00137526 -0.00163258" quat="-0.268119 0.654593 -0.654326 -0.267355" type="mesh" rgba="0.792157 0.819608 0.933333 1" mesh="Effector_Link"/>
+                <geom class="visual" size="0.010025 0.0495 0.0115" pos="-0.0691616 0.10551 -0.000518172" quat="-1.65368e-05 0.000791754 -0.705131 -0.709077" type="box"/>
+                <site name="tcp" pos="-0.214 0 0" size="0.004" rgba="1 0 0 0.6"/>
+                <body gravcomp="1" name="finger1_Link" pos="-0.175679 -0.00883163 0.00880161" quat="0.27363 0.651724 0.273278 0.652459">
+                  <inertial pos="-0.00559183 0.0123672 -0.0226798" quat="0.970401 -0.221092 -0.0935044 -0.0264156" mass="0.0168276" diaginertia="3.38709e-06 2.39147e-06 2.27939e-06"/>
+                  <joint class="finger" name="finger1" type="slide" range="-0.1 0.03" actuatorfrcrange="-150 150" axis="0 -1 0"/>
+                  <geom class="visual" quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="Finger1_Link"/>
+                  <geom name="pad1" class="pad" pos="-0.00011 0.01806 -0.03831" quat="-0.0034 0.70683 0.00279 0.70737"/>
+                </body>
+                <body gravcomp="1" name="finger2_Link" pos="-0.175658 0.00838157 -0.00871552" quat="0.27363 0.651724 0.273278 0.652459">
+                  <inertial pos="0.00559183 -0.0123999 -0.0226798" quat="0.970401 0.221092 0.0935044 -0.0264156" mass="0.0168276" diaginertia="3.38709e-06 2.39147e-06 2.27939e-06"/>
+                  <joint class="finger" name="finger2" type="slide" range="-0.03 0.1" actuatorfrcrange="-150 150" axis="0 -1 0"/>
+                  <geom class="visual" quat="1 0 0 0" type="mesh" rgba="0.156862 0.156862 0.156862 1" mesh="Finger2_Link"/>
+                  <geom name="pad2" class="pad" pos="0.00043 -0.01837 -0.03836" quat="-0.0034 0.70683 0.00279 0.70737"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  
+    <!-- pick table and place table -->
+    <geom name="table_pick" type="box" pos="0.32 0.18 0.05" size="0.07 0.07 0.05" material="wood"/>
+    <geom name="table_place" type="box" pos="0.32 -0.18 0.05" size="0.07 0.07 0.05" material="wood"/>
+    <site name="place_target" pos="0.32 -0.18 0.1005" size="0.03 0.0005" type="cylinder" rgba="0.1 0.9 0.2 0.8"/>
+
+    <body name="cube" pos="0.32 0.18 0.12">
+      <freejoint name="cube"/>
+      <geom name="cube" type="box" size="0.02 0.02 0.02" mass="0.05" friction="1.5 0.05 0.001" rgba="0.9 0.15 0.15 1" condim="4"/>
+    </body>
+
+    <camera name="front" pos="1.25 -0.45 0.75" mode="targetbody" target="cam_target"/>
+    <body name="cam_target" pos="0.15 0 0.25"/>
+  </worldbody>
+
+  <actuator>
+    <position name="a1" joint="joint_1" kp="800" dampratio="1" forcerange="-150 150"/>
+    <position name="a2" joint="joint_2" kp="800" dampratio="1" forcerange="-150 150"/>
+    <position name="a3" joint="joint_3" kp="800" dampratio="1" forcerange="-150 150"/>
+    <position name="a4" joint="joint_4" kp="400" dampratio="1" forcerange="-50 50"/>
+    <position name="a5" joint="joint_5" kp="400" dampratio="1" forcerange="-50 50"/>
+    <position name="a6" joint="joint_6" kp="400" dampratio="1" forcerange="-50 50"/>
+    <position name="f1" joint="finger1" kp="300" dampratio="1" forcerange="-20 20" ctrlrange="-0.03 0.03"/>
+    <position name="f2" joint="finger2" kp="300" dampratio="1" forcerange="-20 20" ctrlrange="-0.03 0.03"/>
+  </actuator>
+</mujoco>
