@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="hcr3a_joint_interface" params="name initial">
+    <joint name="${name}">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">${initial}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="hcr3a_ros2_control" params="sim_mode initial_positions_file">
+    <xacro:property name="init" value="${xacro.load_yaml(initial_positions_file)['initial_positions']}"/>
+    <ros2_control name="HCR3ASystem" type="system">
+      <hardware>
+        <xacro:if value="${sim_mode == 'gazebo'}">
+          <plugin>ign_ros2_control/IgnitionSystem</plugin>
+        </xacro:if>
+        <xacro:if value="${sim_mode == 'mock'}">
+          <plugin>mock_components/GenericSystem</plugin>
+        </xacro:if>
+      </hardware>
+      <xacro:hcr3a_joint_interface name="joint_1" initial="${init['joint_1']}"/>
+      <xacro:hcr3a_joint_interface name="joint_2" initial="${init['joint_2']}"/>
+      <xacro:hcr3a_joint_interface name="joint_3" initial="${init['joint_3']}"/>
+      <xacro:hcr3a_joint_interface name="joint_4" initial="${init['joint_4']}"/>
+      <xacro:hcr3a_joint_interface name="joint_5" initial="${init['joint_5']}"/>
+      <xacro:hcr3a_joint_interface name="joint_6" initial="${init['joint_6']}"/>
+      <xacro:hcr3a_joint_interface name="finger1" initial="${init['finger1']}"/>
+      <xacro:hcr3a_joint_interface name="finger2" initial="${init['finger2']}"/>
+    </ros2_control>
+  </xacro:macro>
+</robot>

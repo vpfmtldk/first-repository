@@ -1,0 +1,13 @@
+# Scaled-down limits for MoveIt time parameterization.
+default_velocity_scaling_factor: 0.3
+default_acceleration_scaling_factor: 0.3
+
+joint_limits:
+  joint_1: {has_velocity_limits: true, max_velocity: 3.1416, has_acceleration_limits: true, max_acceleration: 5.0}
+  joint_2: {has_velocity_limits: true, max_velocity: 3.1416, has_acceleration_limits: true, max_acceleration: 5.0}
+  joint_3: {has_velocity_limits: true, max_velocity: 3.1416, has_acceleration_limits: true, max_acceleration: 5.0}
+  joint_4: {has_velocity_limits: true, max_velocity: 3.1416, has_acceleration_limits: true, max_acceleration: 5.0}
+  joint_5: {has_velocity_limits: true, max_velocity: 3.1416, has_acceleration_limits: true, max_acceleration: 5.0}
+  joint_6: {has_velocity_limits: true, max_velocity: 3.1416, has_acceleration_limits: true, max_acceleration: 5.0}
+  finger1: {has_velocity_limits: true, max_velocity: 0.1, has_acceleration_limits: true, max_acceleration: 1.0}
+  finger2: {has_velocity_limits: true, max_velocity: 0.1, has_acceleration_limits: true, max_acceleration: 1.0}

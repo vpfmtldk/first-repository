@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<robot name="hcr3a" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- sim_mode: "mock"  -> mock_components/GenericSystem (MoveIt demo, no physics)
+                 "gazebo" -> ign_ros2_control/IgnitionSystem (Gazebo Fortress) -->
+  <xacro:arg name="sim_mode" default="mock"/>
+  <xacro:arg name="controllers_file" default=""/>
+  <xacro:arg name="initial_positions_file" default="$(find hcr3a_description)/config/initial_positions.yaml"/>
+
+  <xacro:include filename="$(find hcr3a_description)/urdf/hcr3a_arm.xacro"/>
+  <xacro:include filename="$(find hcr3a_description)/urdf/hcr3a.ros2_control.xacro"/>
+
+  <link name="world"/>
+  <joint name="world-base_link" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <xacro:hcr3a_arm/>
+  <xacro:hcr3a_ros2_control sim_mode="$(arg sim_mode)"
+      initial_positions_file="$(arg initial_positions_file)"/>
+
+  <xacro:if value="${'$(arg sim_mode)' == 'gazebo'}">
+    <gazebo>
+      <plugin filename="libign_ros2_control-system.so" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+        <parameters>$(arg controllers_file)</parameters>
+      </plugin>
+    </gazebo>
+    <!-- grippy fingertip pads -->
+    <gazebo reference="finger1_Link">
+      <mu1>2.0</mu1>
+      <mu2>2.0</mu2>
+      <kp>1000000.0</kp>
+      <kd>100.0</kd>
+      <minDepth>0.001</minDepth>
+    </gazebo>
+    <gazebo reference="finger2_Link">
+      <mu1>2.0</mu1>
+      <mu2>2.0</mu2>
+      <kp>1000000.0</kp>
+      <kd>100.0</kd>
+      <minDepth>0.001</minDepth>
+    </gazebo>
+  </xacro:if>
+</robot>

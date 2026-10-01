@@ -1,0 +1,10 @@
+# Start pose: gripper pointing down, tcp ~0.3 m above the floor in front of the robot.
+initial_positions:
+  joint_1: 0.6361
+  joint_2: -1.5965
+  joint_3: -0.1477
+  joint_4: -2.9682
+  joint_5: 1.5708
+  joint_6: -0.1493
+  finger1: -0.02
+  finger2: 0.02
